@@ -15,6 +15,7 @@
 	"support" : {
 		"issues" : "https://github.com/raulferras/PHP-po-parser/issues"
 	},
+	"version" : "5.0.3",
 	"require" : {
 		"php": ">=5.3.0"
 	},
