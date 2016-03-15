@@ -1,6 +1,4 @@
-<?php
-
-namespace Sepia;
+<?php namespace Sepia\PoParser\Handler;
 
 /**
  *    Copyright (c) 2012 Raúl Ferràs raul.ferras@gmail.com
@@ -32,18 +30,36 @@ namespace Sepia;
  *
  * https://github.com/raulferras/PHP-po-parser
  */
-class StringHandler implements InterfaceHandler
+class StringHandler implements HandlerInterface
 {
-    protected $string;
+    /**
+     * @var string[]
+     */
+    protected $strings;
+
+    /**
+     * @var int
+     */
+    protected $total;
+
+    /**
+     * @var int
+     */
     protected $line;
 
-    public function __construct( $string )
+    /**
+     * @param string $string
+     */
+    public function __construct($string)
     {
         $this->line = 0;
-        $this->strings = explode("\n",$string);
+        $this->strings = explode("\n", $string);
         $this->total = count($this->strings);
     }
 
+    /**
+     * @return string|false
+     */
     public function getNextLine()
     {
         if (isset($this->strings[$this->line])) {
@@ -52,22 +68,36 @@ class StringHandler implements InterfaceHandler
         } else {
             $result = false;
         }
+        
         return $result;
     }
 
+    /**
+     * @return bool
+     */
     public function ended()
     {
         return ($this->line>=$this->total);
     }
 
+    /**
+     * @return bool
+     */
     public function close()
     {
         $this->line = 0;
+
+        return true;
     }
 
 
-    public function save($ignore)
+    /**
+     * @inheritdoc
+     *
+     * @param string $output
+     * @param array  $params
+     */
+    public function save($output, $params)
     {
-
     }
 }

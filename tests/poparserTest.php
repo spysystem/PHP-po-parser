@@ -1,11 +1,13 @@
 <?php
 
-namespace Sepia;
+use Sepia\PoParser\Parser;
+use Sepia\PoParser\Handler\FileHandler;
+use Sepia\PoParser\Handler\StringHandler;
 
 class PoParserTest extends \PHPUnit_Framework_TestCase
 {
-
-    public function tearDown() {
+    public function tearDown()
+    {
         parent::tearDown();
 
         if (file_exists(__DIR__ . '/pofiles/temp.po')) {
@@ -13,10 +15,62 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
         }
     }
 
+    /**
+     * Test reading default options
+     * @return [type] [description]
+     */
+    public function testGetDefaultOptions()
+    {
+        $parser = new Parser(new StringHandler(''));
+
+        $options = $parser->getOptions();
+
+        $defaultOptions = array(
+            Parser::OPTION_EOL_KEY => Parser::OPTION_EOL_VALUE,
+            Parser::OPTION_EOC_KEY => Parser::OPTION_EOC_VALUE
+        );
+
+        $this->assertEquals($options, $defaultOptions);
+    }
+
+    /**
+     * Test setting options
+     */
+    public function testSetOptions()
+    {
+        $parser = new Parser(new StringHandler(''));
+
+        $parser->setOptions(array(Parser::OPTION_EOL_KEY => "\n"));
+        $options = $parser->getOptions();
+
+        $defaultOptions = array(
+            Parser::OPTION_EOL_KEY => "\n",
+            Parser::OPTION_EOC_KEY => Parser::OPTION_EOC_VALUE
+        );
+
+        $this->assertEquals($options, $defaultOptions);
+    }
+
+    /**
+     * Test changing source handler.
+     */
+    public function testSetHandlerInterface()
+    {
+        $parser = new Parser(new StringHandler(''));
+
+        $handler2 = new StringHandler('');
+        $parser->setSourceHandle($handler2);
+
+        $this->assertEquals($handler2, $parser->getSourceHandle());
+    }
+
+    /**
+     * Test reading healthy po file.
+     */
     public function testRead()
     {
         try {
-            $parser = PoParser::parseFile(__DIR__ . '/pofiles/healthy.po');
+            $parser = Parser::parseFile(__DIR__ . '/pofiles/healthy.po');
             $result = $parser->getEntries();
         } catch (\Exception $e) {
             $result = array();
@@ -25,11 +79,10 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
 
         $this->assertCount(2, $result);
 
-
         // Read file without headers.
         // It should not skip first entry
         try {
-            $parser = PoParser::parseFile(__DIR__ . '/pofiles/noheader.po');
+            $parser = Parser::parseFile(__DIR__ . '/pofiles/noheader.po');
             $result = $parser->getEntries();
         } catch (\Exception $e) {
             $result = array();
@@ -39,15 +92,13 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(2, $result, 'Did not read properly po file without headers.');
     }
 
-
     /**
-     *    Tests reading the headers.
-     *
+     * Tests reading the headers.
      */
     public function testHeaders()
     {
         try {
-            $parser = PoParser::parseFile(__DIR__ . '/pofiles/healthy.po');
+            $parser = Parser::parseFile(__DIR__ . '/pofiles/healthy.po');
             $headers = $parser->getHeaders();
 
             $this->assertCount(18, $headers);
@@ -71,15 +122,16 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
             $this->assertEquals("\"X-Poedit-SearchPath-2: ../../../modules\\n\"", $headers[17]);
         } catch (\Exception $e) {
             $this->fail($e->getMessage());
-//			$this->assertTrue( false, $e->getMessage() );
         }
     }
 
-
+    /**
+     * Tests multiline msgid
+     */
     public function testMultilineId()
     {
         try {
-            $parser = PoParser::parseFile(__DIR__ . '/pofiles/multilines.po');
+            $parser = Parser::parseFile(__DIR__ . '/pofiles/multilines.po');
             $result = $parser->getEntries();
             $headers = $parser->getHeaders();
 
@@ -93,12 +145,11 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
 
     /**
      *
-     *
      */
     public function testPlurals()
     {
         try {
-            $parser = PoParser::parseFile(__DIR__ . '/pofiles/plurals.po');
+            $parser = Parser::parseFile(__DIR__ . '/pofiles/plurals.po');
             $headers = $parser->getHeaders();
             $result = $parser->getEntries();
 
@@ -109,14 +160,15 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
         }
     }
 
+    /**
+     * Tests for msgstr plurals.
+     */
     public function testPluralsMultiline()
     {
         try {
-            $parser = PoParser::parseFile(__DIR__ . '/pofiles/pluralsMultiline.po');
+            $parser = Parser::parseFile(__DIR__ . '/pofiles/pluralsMultiline.po');
             $this->assertCount(2, $parser->getEntries());
             $entries = $parser->getEntries();
-            $msgStringZero = "";
-            $msgStringOne = "";
             foreach ($entries as $id => $entry) {
                 $this->assertTrue(isset($entry['msgstr[0]']));
                 $this->assertTrue(isset($entry['msgstr[1]']));
@@ -128,47 +180,46 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
 
 
     /**
-     *    Test Writing file
+     * Test Writing file
      */
     public function testWrite()
     {
         // Read & write a simple file
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/healthy.po');
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/healthy.po');
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
 
         $this->assertFileEquals(__DIR__ . '/pofiles/healthy.po', __DIR__ . '/pofiles/temp.po');
 
         // Read & write a file with no headers
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/noheader.po');
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/noheader.po');
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
 
         $this->assertFileEquals(__DIR__ . '/pofiles/noheader.po', __DIR__ . '/pofiles/temp.po');
 
         // Read & write a po file with multilines
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/multilines.po');
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/multilines.po');
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
 
         $this->assertFileEquals(__DIR__ . '/pofiles/multilines.po', __DIR__ . '/pofiles/temp.po');
 
         // Read & write a po file with contexts
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/context.po');
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/context.po');
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
 
         $this->assertFileEquals(__DIR__ . '/pofiles/context.po', __DIR__ . '/pofiles/temp.po');
 
 
         // Read & write a po file with previous unstranslated strings
-        $parser = PoParser::parseFile( __DIR__ . '/pofiles/previous_unstranslated.po' );
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/previous_unstranslated.po');
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
 
         $this->assertFileEquals(__DIR__ . '/pofiles/previous_unstranslated.po', __DIR__.'/pofiles/temp.po');
 
         // Read & write a po file with multiple flags
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/multiflags.po');
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/multiflags.po');
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
 
         $this->assertFileEquals(__DIR__ . '/pofiles/multiflags.po', __DIR__.'/pofiles/temp.po');
-
 
         unlink(__DIR__ . '/pofiles/temp.po');
     }
@@ -184,16 +235,16 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
             "%s entradas no actualizadas, alguien las está editando..."
         );
 
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/plurals.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/plurals.po');
 
         $parser->setEntry($msgid, array(
             'msgid' => $msgid,
             'msgstr' => $msgstr
         ));
 
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
 
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/temp.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/temp.po');
         $newPlurals = $parser->getEntries();
         $this->assertEquals($newPlurals[$msgid]['msgstr'], $msgstr);
     }
@@ -204,7 +255,7 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
     public function testUpdateComments()
     {
         $fileHandler = new FileHandler(__DIR__ . '/pofiles/context.po');
-        $parser = new PoParser($fileHandler);
+        $parser = new Parser($fileHandler);
         $entries = $parser->parse();
         $options = $parser->getOptions();
         $ctxtGlue = $options['context-glue'];
@@ -216,9 +267,9 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
         $entry['tcomment'] = array('Test write tcomment');
 
         $parser->setEntry($msgid, $entry);
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
 
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/temp.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/temp.po');
         $entries = $parser->getEntries();
 
         $this->assertEquals($entries[$msgid]['tcomment'][0], $entry['tcomment'][0]);
@@ -233,7 +284,7 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
     {
         $msgid = '%1$s-%2$s';
 
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/context.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/context.po');
         $entries = $parser->getEntries();
 
         $entries[$msgid]['msgstr'] = array('translate');
@@ -245,7 +296,7 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
      */
     public function testUpdateHeaders()
     {
-        $parser = PoParser::parseFile(__DIR__.'/pofiles/context.po');
+        $parser = Parser::parseFile(__DIR__.'/pofiles/context.po');
 
         $newHeaders = array(
             '"Project-Id-Version: \n"',
@@ -260,76 +311,62 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
             '"Plural-Forms: nplurals=2; plural=n != 1;\n"'
         );
 
-        $result = $parser->setHeaders($newHeaders);
-        $this->assertTrue($result);
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $result = $parser->setHeaders($newHeaders)->getHeaders();
+        $this->assertTrue(count($result)>0);
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
 
-        $newPoFile = PoParser::parseFile(__DIR__ . '/pofiles/temp.po');
+        $newPoFile = Parser::parseFile(__DIR__ . '/pofiles/temp.po');
         $readHeaders = $newPoFile->getHeaders();
         $this->assertEquals($newHeaders, $readHeaders);
-    }
-
-    /**
-     * Test for fail update headers
-     */
-    public function testUpdateHeadersWrong()
-    {
-        $pofile = new PoParser(new StringHandler(''));
-        $result = $pofile->setHeaders('header');
-        $this->assertFalse($result);
     }
 
     /**
      * Test for po files with no blank lines between entries
      */
     public function testNoBlankLines()
-	{
-        $parser = PoParser::parseFile( __DIR__ . '/pofiles/noblankline.po' );
+    {
+        $parser = Parser::parseFile( __DIR__ . '/pofiles/noblankline.po' );
         $entries = $parser->getEntries();
 
-		$expected = array(
+        $expected = array(
             'one' => array(
-			    'msgid' => array(0 => 'one'),
-			    'msgstr' => array(0 => 'uno'),
-			 ),
-			'two' => array(
-			  'msgid' => array( 0 => 'two'),
-			  'msgstr' => array( 0 => 'dos')
-			  )
-		);
+                'msgid' => array(0 => 'one'),
+                'msgstr' => array(0 => 'uno'),
+            ),
+            'two' => array(
+              'msgid' => array( 0 => 'two'),
+              'msgstr' => array( 0 => 'dos')
+            )
+        );
 
-		$this->assertEquals( $entries, $expected );
-	}
-
-
-
+        $this->assertEquals( $entries, $expected );
+    }
 
     /**
      *  Test for entries with multiple flags
      */
     public function testFlags()
     {
-        // Read po file with 'php-format' flag. Add 'fuzzy' flag. 
+        // Read po file with 'php-format' flag. Add 'fuzzy' flag.
         // Compare the result with the version that has 'php-format' and 'fuzzy' flags
-        $parser = PoParser::parseFile(__DIR__ . '/pofiles/flags-phpformat.po');
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/flags-phpformat.po');
         $entries = $parser->getEntries();
 
-        foreach($entries as $msgid => $entry){
+        foreach ($entries as $msgid => $entry) {
             $entry['flags'][] = 'fuzzy';
             $parser->setEntry($msgid, $entry);
         }
 
-        $parser->writeFile(__DIR__ . '/pofiles/temp.po');
+        $parser->save(array('filepath' => __DIR__ . '/pofiles/temp.po'));
         $this->assertFileEquals(__DIR__ . '/pofiles/flags-phpformat-fuzzy.po', __DIR__.'/pofiles/temp.po');
     }
-
 
     /**
      *  Test for reading previous unstranslated strings
      */
     public function testPreviousUnstranslated()
     {
-        $parser = PoParser::parseFile( __DIR__ . '/pofiles/previous_unstranslated.po' );
+        $parser = Parser::parseFile(__DIR__ . '/pofiles/previous_unstranslated.po');
         $entries= $parser->getEntries();
 
         $expected = array(
@@ -343,6 +380,6 @@ class PoParserTest extends \PHPUnit_Framework_TestCase
             )
         );
 
-        $this->assertEquals( $entries, $expected );
+        $this->assertEquals($entries, $expected);
     }
 }
