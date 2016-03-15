@@ -1,5 +1,5 @@
 {
-	"name"        : "sepia/po-parser",
+	"name"        : "fmads/po-parser",
 	"description" : "Gettext *.PO file parser for PHP.",
 	"type"        : "library",
 	"keywords"    : ["i18n","i10n","po","gettext"],
