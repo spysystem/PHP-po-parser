@@ -1,5 +1,5 @@
 {
-	"name"        : "fmads/po-parser",
+	"name"        : "spysystem/po-parser",
 	"description" : "Gettext *.PO file parser for PHP.",
 	"type"        : "library",
 	"keywords"    : ["i18n","i10n","po","gettext"],
