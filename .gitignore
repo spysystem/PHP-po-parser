@@ -4,3 +4,4 @@ composer.phar
 build
 !build/.gitignore
 !build/logs/.gitignore
+composer.lock
