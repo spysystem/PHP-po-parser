@@ -389,8 +389,8 @@ class Parser
 							case 'msgctxt':
 							case 'msgid':
 							case 'msgid_plural':
-							case (strpos($state, 'msgstr[') !== false):
-								if (is_string($entry[$state])) {
+							case (strpos($state ?? '', 'msgstr[') !== false):
+								if (is_string($entry[$state] ?? null)) {
 									// Convert it to array
 									$entry[$state] = [$entry[$state]];
 								}
