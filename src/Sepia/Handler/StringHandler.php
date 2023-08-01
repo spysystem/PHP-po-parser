@@ -1,4 +1,5 @@
-<?php namespace Sepia\PoParser\Handler;
+<?php
+namespace Sepia\PoParser\Handler;
 
 /**
  *    Copyright (c) 2012 Raúl Ferràs raul.ferras@gmail.com
@@ -68,7 +69,7 @@ class StringHandler implements HandlerInterface
         } else {
             $result = false;
         }
-        
+
         return $result;
     }
 

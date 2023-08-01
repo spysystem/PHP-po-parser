@@ -5,3 +5,4 @@ build
 !build/.gitignore
 !build/logs/.gitignore
 composer.lock
+.phpunit.result.cache
